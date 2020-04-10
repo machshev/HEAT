@@ -4,6 +4,8 @@
 #include <SPI.h>
 #include <math.h>
 
+# define CAN_ID_HWTANK_TEMP     0xA1
+
 const int fixed_res = 6800;
 const int therm_res = 10000;
 const int therm_b = 3950;
@@ -60,7 +62,7 @@ void transmit_can_packet(float therm1, float therm2, float therm3) {
 
   buff = (uint8_t *) &data;
   
-  CAN.beginPacket(0x01);
+  CAN.beginPacket(CAN_ID_HWTANK_TEMP);
   CAN.write(buff[0]);
   CAN.write(buff[1]);
   CAN.write(buff[2]);

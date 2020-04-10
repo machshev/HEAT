@@ -4,11 +4,15 @@
 #include <SPI.h>
 #include <math.h>
 
+# define CAN_ID_HWTANK_TEMP     0xA1
+
 const long mcp2515_can_freq = 500E3;
 const long mcp2515_spi_freq = 10E6;
 const long mcp2515_clock_freq = 16E6;
 
 uint8_t rxbuf[8] = {0};
+
+float hwtank_temp = 0;
 
 struct ThermData {
   uint16_t therm1;
@@ -17,13 +21,16 @@ struct ThermData {
 };
 
 
-void packet_0x01_therm(uint8_t *msg){
+void packet_HWTANK_TEMP(uint8_t *msg){
   struct ThermData *data = (struct ThermData *) msg;
 
   float therm1 = ((float) data->therm1) / 100;
   float therm2 = ((float) data->therm2) / 100;
   float therm3 = ((float) data->therm3) / 100;
 
+  hwtank_temp = (therm1 + therm2 + therm3) / 3;
+
+  Serial.print(hwtank_temp);
   Serial.print(" T1[");
   Serial.print(therm1);
   Serial.print("] T2[");
@@ -45,8 +52,8 @@ void onReceive(int packetSize) {
   }
 
   switch (CAN.packetId()) {
-    case 0x01:
-      packet_0x01_therm(rxbuf);
+    case CAN_ID_HWTANK_TEMP:
+      packet_HWTANK_TEMP(rxbuf);
       break;
   }
 
