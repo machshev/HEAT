@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "HEATRelays"
+		},
+		{
+			"path": "HEATThermistorNode"
+		}
+	],
+	"settings": {}
+}

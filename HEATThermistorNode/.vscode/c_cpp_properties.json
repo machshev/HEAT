@@ -1,0 +1,59 @@
+{
+    "configurations": [
+        {
+            "name": "!!! WARNING !!! AUTO-GENERATED FILE, PLEASE DO NOT MODIFY IT AND USE https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags"
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "/home/david/base/PlatformIO/Projects/HEAT/HEATThermistorNode/include",
+                "/home/david/base/PlatformIO/Projects/HEAT/HEATThermistorNode/src",
+                "/home/david/.platformio/lib/CAN_ID2055/src",
+                "/home/david/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "/home/david/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "/home/david/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                "/home/david/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "/home/david/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "/home/david/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "/home/david/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "/home/david/.platformio/packages/tool-unity",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/david/base/PlatformIO/Projects/HEAT/HEATThermistorNode/include",
+                    "/home/david/base/PlatformIO/Projects/HEAT/HEATThermistorNode/src",
+                    "/home/david/.platformio/lib/CAN_ID2055/src",
+                    "/home/david/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "/home/david/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "/home/david/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                    "/home/david/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "/home/david/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "/home/david/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "/home/david/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "/home/david/.platformio/packages/tool-unity",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=40301",
+                "ARDUINO_AVR_NANO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega168__",
+                ""
+            ],
+            "intelliSenseMode": "clang-x64",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "/home/david/.platformio/packages/toolchain-atmelavr/bin/avr-gcc",
+            "compilerArgs": [
+                "-mmcu=atmega168",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
