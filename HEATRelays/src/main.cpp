@@ -4,16 +4,16 @@
 #include <SPI.h>
 #include <math.h>
 
-# define CAN_ID_HWTANK_TEMP     0xA1
+#define CAN_ID_HWTANK_TEMP     0xA1
 
-# define RELAY_1                9
-# define RELAY_2                8
-# define RELAY_3                7
-# define RELAY_4                6
-# define RELAY_5                5
-# define RELAY_6                4
-# define RELAY_7                3
-# define RELAY_8                0
+#define RELAY_1                9
+#define RELAY_2                8
+#define RELAY_3                7
+#define RELAY_4                6
+#define RELAY_5                5
+#define RELAY_6                4
+#define RELAY_7                3
+#define RELAY_8                0
 
 
 const long mcp2515_can_freq = 500E3;

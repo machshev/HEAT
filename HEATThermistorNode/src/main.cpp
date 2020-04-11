@@ -63,12 +63,12 @@ void transmit_can_packet(float therm1, float therm2, float therm3) {
   buff = (uint8_t *) &data;
   
   CAN.beginPacket(CAN_ID_HWTANK_TEMP);
-  CAN.write(buff[0]);
-  CAN.write(buff[1]);
-  CAN.write(buff[2]);
-  CAN.write(buff[3]);
-  CAN.write(buff[4]);
-  CAN.write(buff[5]);
+  CAN.write(buff++);
+  CAN.write(buff++);
+  CAN.write(buff++);
+  CAN.write(buff++);
+  CAN.write(buff++);
+  CAN.write(buff++);
   CAN.endPacket();
 
   //CAN.sleep();
