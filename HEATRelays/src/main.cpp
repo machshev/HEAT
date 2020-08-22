@@ -140,8 +140,10 @@ void onReceive(int packetSize) {
 
 void transmit_status_can_packet() {
   //CAN.wakeup();
+  uint16_t hwtank_temp_fixed_point = hwtank_temp * 100;
+
   CAN.beginPacket(CAN_ID_CONTROLLER_STATES);
-  CAN.write(hwtank_temp);
+  CAN.write((uint8_t *) &hwtank_temp_fixed_point, 2);
   CAN.write(*((uint8_t *) &mains_states));
   CAN.write(*((uint8_t *) &relay_states));
   CAN.write(hotwater_ON * 2);
