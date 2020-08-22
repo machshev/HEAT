@@ -56,26 +56,29 @@ float hwtank_temp = 0;
 float hotwater_ON = 40;
 float hotwater_OFF = 45;
 
+bool hw_on = false;
+bool heat_on = false;
+
 struct RelayStates {
-  bool R1_hot_water_valve_open_req;
-  bool R2_rads_valve_open_req;
-  bool R3_boiler_req;
-  bool R4_NA;
-  bool R5_NA;
-  bool R6_NA;
-  bool R7_NA;
-  bool R8_NA;
+  bool R1_hot_water_valve_open_req : 1;
+  bool R2_rads_valve_open_req : 1;
+  bool R3_boiler_req : 1;
+  bool R4_NA : 1;
+  bool R5_NA : 1;
+  bool R6_NA : 1;
+  bool R7_NA : 1;
+  bool R8_NA : 1;
 };
 
 struct MainsStates {
-  bool S1_thermostat_downstairs;
-  bool S2_thermostat_upstairs;
-  bool S3_hot_water_valve_opened;
-  bool S4_rads_valve_opened;
-  bool S5_NA;
-  bool S6_boiler_request_check;
-  bool S7_pump_req_from_boiler;
-  bool S8_hot_water_enable_programmer;
+  bool S1_thermostat_downstairs : 1;
+  bool S2_thermostat_upstairs : 1;
+  bool S3_hot_water_valve_opened : 1;
+  bool S4_rads_valve_opened : 1;
+  bool S5_NA : 1;
+  bool S6_boiler_request_check : 1;
+  bool S7_pump_req_from_boiler : 1;
+  bool S8_hot_water_enable_programmer : 1;
 };
 
 struct ThermData {
@@ -89,8 +92,8 @@ struct TempSetPoint {
   uint8_t off_temp;
 };
 
-struct RelayStates relay_states;
-struct MainsStates mains_states;
+struct RelayStates relay_states = {0};
+struct MainsStates mains_states = {0};
 
 void packet_HWTANK_TEMP(uint8_t *msg) {
   struct ThermData *data = (struct ThermData *) msg;
@@ -139,8 +142,8 @@ void transmit_status_can_packet() {
   //CAN.wakeup();
   CAN.beginPacket(CAN_ID_CONTROLLER_STATES);
   CAN.write(hwtank_temp);
-  CAN.write(*(uint8_t *) &mains_states);
-  CAN.write(*(uint8_t *) &relay_states);
+  CAN.write(*((uint8_t *) &mains_states));
+  CAN.write(*((uint8_t *) &relay_states));
   CAN.write(hotwater_ON * 2);
   CAN.write(hotwater_OFF * 2);
   CAN.endPacket();
@@ -179,28 +182,34 @@ void relay_cycle_test() {
 }
 
 void read_states() {
-  mains_states.S1_thermostat_downstairs = analogRead(mains_ids[0]) < TRUE_THRESHOULD;
-  mains_states.S2_thermostat_upstairs = analogRead(mains_ids[1]) < TRUE_THRESHOULD;
-  mains_states.S3_hot_water_valve_opened = analogRead(mains_ids[2]) < TRUE_THRESHOULD;
-  mains_states.S4_rads_valve_opened = analogRead(mains_ids[3]) < TRUE_THRESHOULD;
-  mains_states.S5_NA = analogRead(mains_ids[4]) < TRUE_THRESHOULD;
-  mains_states.S6_boiler_request_check = analogRead(mains_ids[5]) < TRUE_THRESHOULD;
-  mains_states.S7_pump_req_from_boiler = analogRead(mains_ids[6]) < TRUE_THRESHOULD;
+  mains_states.S1_thermostat_downstairs =       analogRead(mains_ids[0]) < TRUE_THRESHOULD;
+  mains_states.S2_thermostat_upstairs =         analogRead(mains_ids[1]) < TRUE_THRESHOULD;
+  mains_states.S3_hot_water_valve_opened =      analogRead(mains_ids[2]) < TRUE_THRESHOULD;
+  mains_states.S4_rads_valve_opened =           analogRead(mains_ids[3]) < TRUE_THRESHOULD;
+  mains_states.S5_NA =                          analogRead(mains_ids[4]) < TRUE_THRESHOULD;
+  mains_states.S6_boiler_request_check =        analogRead(mains_ids[5]) < TRUE_THRESHOULD;
+  mains_states.S7_pump_req_from_boiler =        analogRead(mains_ids[6]) < TRUE_THRESHOULD;
   mains_states.S8_hot_water_enable_programmer = analogRead(mains_ids[7]) < TRUE_THRESHOULD;
 
-  relay_states.R1_hot_water_valve_open_req = digitalRead(relay_ids[0]);
-  relay_states.R2_rads_valve_open_req = digitalRead(relay_ids[1]);
-  relay_states.R3_boiler_req = digitalRead(relay_ids[2]);
-  relay_states.R4_NA = digitalRead(relay_ids[3]);
-  relay_states.R5_NA = digitalRead(relay_ids[4]);
-  relay_states.R6_NA = digitalRead(relay_ids[5]);
-  relay_states.R7_NA = digitalRead(relay_ids[6]);
-  relay_states.R8_NA = digitalRead(relay_ids[7]);
+  relay_states.R1_hot_water_valve_open_req =    !digitalRead(relay_ids[0]);
+  relay_states.R2_rads_valve_open_req =         !digitalRead(relay_ids[1]);
+  relay_states.R3_boiler_req =                  !digitalRead(relay_ids[2]);
+  relay_states.R4_NA =                          !digitalRead(relay_ids[3]);
+  relay_states.R5_NA =                          !digitalRead(relay_ids[4]);
+  relay_states.R6_NA =                          !digitalRead(relay_ids[5]);
+  relay_states.R7_NA =                          !digitalRead(relay_ids[6]);
+  relay_states.R8_NA =                          !digitalRead(relay_ids[7]);
   
   Serial.print(hwtank_temp);
-  Serial.print(' ');
-  Serial.print(*(uint8_t *) &mains_states);
-  Serial.println(*(uint8_t *) &relay_states);
+  Serial.print('\t');
+
+  Serial.print(hotwater_ON);
+  Serial.print('\t');
+  Serial.print(hotwater_OFF);
+  Serial.print('\t');
+  Serial.print(*((uint8_t *) &mains_states), BIN);
+  Serial.print(" ");
+  Serial.println(*((uint8_t *) &relay_states), BIN);
 }
 
 void setup() {
@@ -229,24 +238,34 @@ void loop() {
 
   // Hot water valve control
   if (mains_states.S8_hot_water_enable_programmer) {
-    if (hwtank_temp < hotwater_ON) relay_on(relay_ids[0]); // Hot water valve on
-    if (hwtank_temp > hotwater_OFF) relay_off(relay_ids[0]); // Hot water valve off
+    if (!hw_on && (hwtank_temp < hotwater_ON)) hw_on = true;
+    if (hw_on && (hwtank_temp > hotwater_OFF)) hw_on = false;
   } else {
-    relay_off(relay_ids[0]); // Hot water valve off
+    hw_on = false;
   }
 
   // Rads valve control
-  if (mains_states.S1_thermostat_downstairs || mains_states.S2_thermostat_upstairs){
-    relay_on(relay_ids[1]); // Rads valve on
-  } else {
-    relay_off(relay_ids[1]); // Rads valve off
-  }
+  heat_on = mains_states.S1_thermostat_downstairs || mains_states.S2_thermostat_upstairs;
 
   // Boiler control
-  if (mains_states.S3_hot_water_valve_opened || mains_states.S4_rads_valve_opened){
+  if ((mains_states.S3_hot_water_valve_opened && hw_on)
+       || (mains_states.S4_rads_valve_opened && heat_on)){
     relay_on(relay_ids[2]); // Boiler on
   } else {
     relay_off(relay_ids[2]); // Boiler off
+  }
+
+  // Set the relays
+  if (hw_on) {
+    relay_on(relay_ids[0]);  // Hot water valve on
+  } else {
+    relay_off(relay_ids[0]);  // Hot water valve off 
+  }
+
+  if (heat_on) {
+     relay_on(relay_ids[1]); // Rads valve on
+  } else {
+    relay_off(relay_ids[1]); // Rads valve off
   }
 
   transmit_status_can_packet();
