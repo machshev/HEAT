@@ -4,7 +4,9 @@
 #include <SPI.h>
 #include <math.h>
 
-#define CAN_ID_HWTANK_TEMP     0xA1
+#define CAN_ID_HWTANK_TEMP          0xA1
+#define CAN_ID_CONTROLLER_STATES    0xA2
+#define CAN_ID_HOTWATER_SETPOINT    0x51
 
 /*
 Junction box (right to left):
@@ -20,23 +22,27 @@ Junction box (right to left):
  10. Pump on
 */
 
-#define RELAY_1                9  // Hot Water Valve (request) [4]
-#define RELAY_2                8  // Rads Valve (request) [5]
-#define RELAY_3                7  // Boiler (request) [8]
-#define RELAY_4                6  // NC
-#define RELAY_5                5  // NC
-#define RELAY_6                4  // NC
-#define RELAY_7                3  // NC
-#define RELAY_8                0  // NC
+uint8_t relay_ids[8] = {
+  9,  // Hot Water Valve (request) [4]
+  8,  // Rads Valve (request) [5]
+  7,  // Boiler (request) [8]
+  6,  // NC
+  5,  // NC
+  4,  // NC
+  3,  // NC
+  0,  // NC
+};
 
-#define S_1                    A7  // Thermostat Down stairs [2]
-#define S_2                    A6  // Thermostat Up stairs [3]
-#define S_3                    A5  // Hot Water Valve open [6]
-#define S_4                    A4  // Rads Valve Open [7]
-#define S_5                    A3  // NC
-#define S_6                    A2  // Boiler request check [8]
-#define S_7                    A1  // Pump request from Boiler [9]
-#define S_8                    A0  // Hot Water (Programmer Enable) [1]
+uint8_t mains_ids[8] = {
+  A7,  // Thermostat Down stairs [2]
+  A6,  // Thermostat Up stairs [3]
+  A5,  // Hot Water Valve open [6]
+  A4,  // Rads Valve Open [7]
+  A3,  // NC
+  A2,  // Boiler request check [8]
+  A1,  // Pump request from Boiler [9]
+  A0,  // Hot Water (Programmer Enable) [1]
+};
 
 #define TRUE_THRESHOULD        200
 
@@ -44,10 +50,33 @@ const long mcp2515_spi_freq = 10E6;
 const long mcp2515_can_freq = 500E3;
 const long mcp2515_clock_freq = 16E6;
 
-uint8_t rxbuf[8] = {0};
+uint8_t rxbuff[8] = {0};
 float hwtank_temp = 0;
 
-bool mains_states[8] = {0};
+float hotwater_ON = 40;
+float hotwater_OFF = 45;
+
+struct RelayStates {
+  bool R1_hot_water_valve_open_req;
+  bool R2_rads_valve_open_req;
+  bool R3_boiler_req;
+  bool R4_NA;
+  bool R5_NA;
+  bool R6_NA;
+  bool R7_NA;
+  bool R8_NA;
+};
+
+struct MainsStates {
+  bool S1_thermostat_downstairs;
+  bool S2_thermostat_upstairs;
+  bool S3_hot_water_valve_opened;
+  bool S4_rads_valve_opened;
+  bool S5_NA;
+  bool S6_boiler_request_check;
+  bool S7_pump_req_from_boiler;
+  bool S8_hot_water_enable_programmer;
+};
 
 struct ThermData {
   uint16_t therm1;
@@ -55,8 +84,15 @@ struct ThermData {
   uint16_t therm3;
 };
 
+struct TempSetPoint {
+  uint8_t on_temp;
+  uint8_t off_temp;
+};
 
-void packet_HWTANK_TEMP(uint8_t *msg){
+struct RelayStates relay_states;
+struct MainsStates mains_states;
+
+void packet_HWTANK_TEMP(uint8_t *msg) {
   struct ThermData *data = (struct ThermData *) msg;
 
   float therm1 = ((float) data->therm1) / 100;
@@ -70,6 +106,12 @@ void packet_HWTANK_TEMP(uint8_t *msg){
   hwtank_temp = (therm1 + therm2 + therm3) / 3;
 }
 
+void packet_HOTWATER_SETPOINT(uint8_t *msg) {
+  struct TempSetPoint *data = (struct TempSetPoint *) msg;
+
+  hotwater_ON = ((float) data->on_temp) / 2;
+  hotwater_OFF = ((float) data->off_temp) / 2;
+}
 
 void onReceive(int packetSize) {
   int byte_no = 0;
@@ -78,15 +120,31 @@ void onReceive(int packetSize) {
   // Serial.println(CAN.packetId(), HEX);
 
   while (CAN.available()) {
-    rxbuf[byte_no++] = (uint8_t) CAN.read();
+    rxbuff[byte_no++] = (uint8_t) CAN.read();
   }
 
   switch (CAN.packetId()) {
     case CAN_ID_HWTANK_TEMP:
-      packet_HWTANK_TEMP(rxbuf);
+      packet_HWTANK_TEMP(rxbuff);
+      break;
+
+    case CAN_ID_HOTWATER_SETPOINT:
+      packet_HOTWATER_SETPOINT(rxbuff);
       break;
   }
 
+}
+
+void transmit_status_can_packet() {
+  //CAN.wakeup();
+  CAN.beginPacket(CAN_ID_CONTROLLER_STATES);
+  CAN.write(hwtank_temp);
+  CAN.write(*(uint8_t *) &mains_states);
+  CAN.write(*(uint8_t *) &relay_states);
+  CAN.write(hotwater_ON * 2);
+  CAN.write(hotwater_OFF * 2);
+  CAN.endPacket();
+  //CAN.sleep();
 }
 
 void setup_relay(uint16_t pin) {
@@ -95,14 +153,9 @@ void setup_relay(uint16_t pin) {
 }
 
 void setup_relays() {
-    setup_relay(RELAY_1);
-    setup_relay(RELAY_2);
-    setup_relay(RELAY_3);
-    setup_relay(RELAY_4);
-    setup_relay(RELAY_5);
-    setup_relay(RELAY_6);
-    setup_relay(RELAY_7);
-    setup_relay(RELAY_8);
+  for(int i=0; i < 8; i++){
+    setup_relay(relay_ids[i]);
+  }
 }
 
 void relay_on(uint16_t pin){
@@ -120,43 +173,34 @@ void pulse_relay(uint16_t pin){
 }
 
 void relay_cycle_test() {
-  pulse_relay(RELAY_1);
-  pulse_relay(RELAY_2);
-  pulse_relay(RELAY_3);
-  pulse_relay(RELAY_4);
-  pulse_relay(RELAY_5);
-  pulse_relay(RELAY_6);
-  pulse_relay(RELAY_7);
-  pulse_relay(RELAY_8);
+  for(int i=0; i < 8; i++){
+    pulse_relay(relay_ids[i]);
+  }
 }
 
 void read_states() {
-  mains_states[0] = analogRead(S_1) < TRUE_THRESHOULD;
-  mains_states[1] = analogRead(S_2) < TRUE_THRESHOULD;
-  mains_states[2] = analogRead(S_3) < TRUE_THRESHOULD;
-  mains_states[3] = analogRead(S_4) < TRUE_THRESHOULD;
-  mains_states[4] = analogRead(S_5) < TRUE_THRESHOULD;
-  mains_states[5] = analogRead(S_6) < TRUE_THRESHOULD;
-  mains_states[6] = analogRead(S_7) < TRUE_THRESHOULD;
-  mains_states[7] = analogRead(S_8) < TRUE_THRESHOULD;
+  mains_states.S1_thermostat_downstairs = analogRead(mains_ids[0]) < TRUE_THRESHOULD;
+  mains_states.S2_thermostat_upstairs = analogRead(mains_ids[1]) < TRUE_THRESHOULD;
+  mains_states.S3_hot_water_valve_opened = analogRead(mains_ids[2]) < TRUE_THRESHOULD;
+  mains_states.S4_rads_valve_opened = analogRead(mains_ids[3]) < TRUE_THRESHOULD;
+  mains_states.S5_NA = analogRead(mains_ids[4]) < TRUE_THRESHOULD;
+  mains_states.S6_boiler_request_check = analogRead(mains_ids[5]) < TRUE_THRESHOULD;
+  mains_states.S7_pump_req_from_boiler = analogRead(mains_ids[6]) < TRUE_THRESHOULD;
+  mains_states.S8_hot_water_enable_programmer = analogRead(mains_ids[7]) < TRUE_THRESHOULD;
 
+  relay_states.R1_hot_water_valve_open_req = digitalRead(relay_ids[0]);
+  relay_states.R2_rads_valve_open_req = digitalRead(relay_ids[1]);
+  relay_states.R3_boiler_req = digitalRead(relay_ids[2]);
+  relay_states.R4_NA = digitalRead(relay_ids[3]);
+  relay_states.R5_NA = digitalRead(relay_ids[4]);
+  relay_states.R6_NA = digitalRead(relay_ids[5]);
+  relay_states.R7_NA = digitalRead(relay_ids[6]);
+  relay_states.R8_NA = digitalRead(relay_ids[7]);
+  
   Serial.print(hwtank_temp);
   Serial.print(' ');
-  Serial.print(mains_states[0]);
-  Serial.print(' ');
-  Serial.print(mains_states[1]);
-  Serial.print(' ');
-  Serial.print(mains_states[2]);
-  Serial.print(' ');
-  Serial.print(mains_states[3]);
-  Serial.print(' ');
-  Serial.print(mains_states[4]);
-  Serial.print(' ');
-  Serial.print(mains_states[5]);
-  Serial.print(' ');
-  Serial.print(mains_states[6]);
-  Serial.print(' ');
-  Serial.println(mains_states[7]);
+  Serial.print(*(uint8_t *) &mains_states);
+  Serial.println(*(uint8_t *) &relay_states);
 }
 
 void setup() {
@@ -184,34 +228,28 @@ void loop() {
   read_states();
 
   // Hot water valve control
-  bool hot_water_enable = mains_states[7];
-
-  if (hot_water_enable) {
-    if (hwtank_temp < 40) relay_on(RELAY_1); // Hot water valve on
-    if (hwtank_temp > 45) relay_off(RELAY_1); // Hot water valve off
+  if (mains_states.S8_hot_water_enable_programmer) {
+    if (hwtank_temp < hotwater_ON) relay_on(relay_ids[0]); // Hot water valve on
+    if (hwtank_temp > hotwater_OFF) relay_off(relay_ids[0]); // Hot water valve off
+  } else {
+    relay_off(relay_ids[0]); // Hot water valve off
   }
 
   // Rads valve control
-
-  bool downstairs_rads_req = mains_states[0];
-  bool upstairs_rads_req = mains_states[1];
-
-  if (downstairs_rads_req || upstairs_rads_req){
-    relay_on(RELAY_2); // Rads valve on
+  if (mains_states.S1_thermostat_downstairs || mains_states.S2_thermostat_upstairs){
+    relay_on(relay_ids[1]); // Rads valve on
   } else {
-    relay_off(RELAY_2); // Rads valve off
+    relay_off(relay_ids[1]); // Rads valve off
   }
 
   // Boiler control
-
-  bool hot_water_valve_on = mains_states[2];
-  bool rads_valve_on = mains_states[3];
-
-  if (hot_water_valve_on || rads_valve_on){
-    relay_on(RELAY_3); // Boiler on
+  if (mains_states.S3_hot_water_valve_opened || mains_states.S4_rads_valve_opened){
+    relay_on(relay_ids[2]); // Boiler on
   } else {
-    relay_off(RELAY_3); // Boiler off
+    relay_off(relay_ids[2]); // Boiler off
   }
+
+  transmit_status_can_packet();
 
   delay(500);
 }

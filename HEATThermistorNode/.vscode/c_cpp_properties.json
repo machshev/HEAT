@@ -12,6 +12,7 @@
                 "/home/david/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "/home/david/.platformio/packages/framework-arduino-avr/cores/arduino",
                 "/home/david/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                "/home/david/.platformio/lib/IRremote_ID4",
                 "/home/david/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                 "/home/david/.platformio/packages/framework-arduino-avr/libraries/HID/src",
                 "/home/david/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
@@ -28,6 +29,7 @@
                     "/home/david/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "/home/david/.platformio/packages/framework-arduino-avr/cores/arduino",
                     "/home/david/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                    "/home/david/.platformio/lib/IRremote_ID4",
                     "/home/david/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                     "/home/david/.platformio/packages/framework-arduino-avr/libraries/HID/src",
                     "/home/david/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
@@ -37,7 +39,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=40301",
+                "PLATFORMIO=40304",
                 "ARDUINO_AVR_NANO",
                 "F_CPU=16000000L",
                 "ARDUINO_ARCH_AVR",
