@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "HEATThermistorNode"
+		},
+		{
+			"path": "HEATDebuger"
 		}
 	],
 	"settings": {}
